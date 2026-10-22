@@ -60,6 +60,7 @@ extension ExtraEntryActionView on EntryAction {
       .editTitleDescription => l10n.entryInfoActionEditTitleDescription,
       .editRating => l10n.entryInfoActionEditRating,
       .editTags => l10n.entryInfoActionEditTags,
+      .addTag => l10n.tagEditorPageAddTagTooltip,
       .removeMetadata => l10n.entryInfoActionRemoveMetadata,
       .exportMetadata => l10n.entryInfoActionExportMetadata,
       // metadata / GeoTIFF
@@ -139,6 +140,7 @@ extension ExtraEntryActionView on EntryAction {
       .editTitleDescription => AIcons.description,
       .editRating => AIcons.rating,
       .editTags => AIcons.tag,
+      .addTag => AIcons.tagAdd,
       .removeMetadata => AIcons.clear,
       .exportMetadata => AIcons.fileExport,
       // metadata / GeoTIFF

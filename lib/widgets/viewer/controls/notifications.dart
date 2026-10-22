@@ -27,6 +27,12 @@ class ShowImageNotification extends EquatableNotification;
 class ShowInfoPageNotification extends EquatableNotification;
 
 @immutable
+class const ShowTagInputNotification({required final AvesEntry entry}) extends EquatableNotification {
+  @override
+  List<Object?> get props => [entry];
+}
+
+@immutable
 class const ShowPreviousEntryNotification({required final bool animate}) extends EquatableNotification {
   @override
   List<Object?> get props => [animate];
