@@ -45,6 +45,7 @@ enum EntryAction {
   editTitleDescription,
   editRating,
   editTags,
+  addTag,
   removeMetadata,
   exportMetadata,
   // metadata / GeoTIFF

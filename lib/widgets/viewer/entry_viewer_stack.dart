@@ -29,6 +29,7 @@ import 'package:aves/widgets/viewer/overlay/bottom/locked.dart';
 import 'package:aves/widgets/viewer/overlay/bottom/panorama.dart';
 import 'package:aves/widgets/viewer/overlay/bottom/slideshow_buttons.dart';
 import 'package:aves/widgets/viewer/overlay/bottom/video/video.dart';
+import 'package:aves/widgets/viewer/overlay/tag_input.dart';
 import 'package:aves/widgets/viewer/overlay/top/top.dart';
 import 'package:aves/widgets/viewer/page_entry_builder.dart';
 import 'package:aves/widgets/viewer/video/conductor.dart';
@@ -68,6 +69,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
   bool _overlayInitialized = false;
   final ValueNotifier<bool> _overlayVisible = ValueNotifier(true);
   final ValueNotifier<bool> _viewLocked = ValueNotifier(false);
+  final ValueNotifier<AvesEntry?> _tagInputEntryNotifier = ValueNotifier(null);
   final ValueNotifier<bool> _overlayExpandedNotifier = ValueNotifier(false);
   late AnimationController _verticalPageAnimationController, _overlayAnimationController;
   late CurvedAnimation _overlayButtonScale, _overlayVideoControlScale, _overlayOpacity, _overlayTopOffsetAnimation;
@@ -197,6 +199,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
     _overlayAnimationController.dispose();
     _overlayVisible.dispose();
     _viewLocked.dispose();
+    _tagInputEntryNotifier.dispose();
     _overlayExpandedNotifier.dispose();
     _currentVerticalPage.dispose();
     _horizontalPager.dispose();
@@ -255,39 +258,54 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
                 // so we monitor the change on the platform and only notify changes
                 valueListenable: AvesApp.isInPictureInPictureMode,
                 builder: (context, pipEnabled, child) {
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: _viewLocked,
-                    builder: (context, locked, child) {
-                      final children = [child!];
-                      if (!pipEnabled) {
-                        if (locked) {
-                          children.addAll([
-                            const Positioned.fill(
-                              child: AbsorbPointer(),
-                            ),
-                            Positioned.fill(
-                              child: GestureDetector(
-                                onTap: () => _overlayVisible.value = !_overlayVisible.value,
-                              ),
-                            ),
-                            _buildViewerLockedBottomOverlay(),
-                          ]);
-                        } else {
-                          // regular overlay
-                          children.addAll(_buildOverlays(availableSize).map(_decorateOverlay));
-                        }
+                  return ValueListenableBuilder<AvesEntry?>(
+                    valueListenable: _tagInputEntryNotifier,
+                    builder: (context, tagInputEntry, child) {
+                      return ValueListenableBuilder<bool>(
+                        valueListenable: _viewLocked,
+                        builder: (context, locked, child) {
+                          final children = [child!];
+                          if (!pipEnabled) {
+                            if (locked) {
+                              children.addAll([
+                                const Positioned.fill(
+                                  child: AbsorbPointer(),
+                                ),
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    onTap: () => _overlayVisible.value = !_overlayVisible.value,
+                                  ),
+                                ),
+                                _buildViewerLockedBottomOverlay(),
+                              ]);
+                            } else if (tagInputEntry != null) {
+                              // inline tag input, replacing the regular overlay
+                              children.add(
+                                ViewerTagInputOverlay(
+                                  key: ValueKey(tagInputEntry),
+                                  entry: tagInputEntry,
+                                  onDismissed: _dismissTagInput,
+                                ),
+                              );
+                            } else {
+                              // regular overlay
+                              children.addAll(_buildOverlays(availableSize).map(_decorateOverlay));
+                            }
 
-                        children.addAll([
-                          const TopGestureAreaProtector(),
-                          const SideGestureAreaProtector(),
-                          const BottomGestureAreaProtector(),
-                        ]);
-                      }
+                            children.addAll([
+                              const TopGestureAreaProtector(),
+                              const SideGestureAreaProtector(),
+                              const BottomGestureAreaProtector(),
+                            ]);
+                          }
 
-                      return BackdropGroup(
-                        child: Stack(
-                          children: children,
-                        ),
+                          return BackdropGroup(
+                            child: Stack(
+                              children: children,
+                            ),
+                          );
+                        },
+                        child: child,
                       );
                     },
                     child: viewer,
@@ -624,6 +642,8 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
       _popVisual();
     } else if (notification is ShowInfoPageNotification) {
       _goToVerticalPage(infoPage);
+    } else if (notification is ShowTagInputNotification) {
+      _tagInputEntryNotifier.value = notification.entry;
     } else if (notification is ShowPreviousEntryNotification) {
       _goToHorizontalPageByDelta(delta: -1, animate: notification.animate);
     } else if (notification is ShowNextEntryNotification) {
@@ -847,13 +867,20 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
   }
 
   void _onPopInvoked() {
-    if (_currentVerticalPage.value == infoPage) {
+    if (_tagInputEntryNotifier.value != null) {
+      _dismissTagInput();
+    } else if (_currentVerticalPage.value == infoPage) {
       // back from info to image
       _goToVerticalPage(imagePage);
     } else {
       if (!_isEntryTracked) _trackEntry();
       _popVisual();
     }
+  }
+
+  void _dismissTagInput() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _tagInputEntryNotifier.value = null;
   }
 
   void _popVisual() {

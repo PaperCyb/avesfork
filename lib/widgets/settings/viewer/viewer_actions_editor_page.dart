@@ -44,6 +44,7 @@ class _ViewerActionEditorPageState extends State<ViewerActionEditorPage> {
     ],
     [
       ...EntryActions.commonMetadataActions,
+      .addTag,
       .settings,
     ],
   ];

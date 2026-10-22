@@ -129,6 +129,7 @@ class EntryActionDelegate with FeedbackMixin, PermissionAwareMixin, SizeAwareMix
         case .editTitleDescription:
         case .editRating:
         case .editTags:
+        case .addTag:
         case .removeMetadata:
         case .exportMetadata:
         case .showGeoTiffOnMap:
@@ -158,6 +159,7 @@ class EntryActionDelegate with FeedbackMixin, PermissionAwareMixin, SizeAwareMix
       case .editTitleDescription:
       case .editRating:
       case .editTags:
+      case .addTag:
       case .removeMetadata:
       case .exportMetadata:
       case .showGeoTiffOnMap:
@@ -292,6 +294,8 @@ class EntryActionDelegate with FeedbackMixin, PermissionAwareMixin, SizeAwareMix
       case .convertMotionPhotoToStillImage:
       case .viewMotionPhotoVideo:
         _metadataActionDelegate.onActionSelected(context, targetEntry, collection, action);
+      case .addTag:
+        ShowTagInputNotification(entry: targetEntry).dispatch(context);
       // generic
       case .settings:
         _goToSettings(context);

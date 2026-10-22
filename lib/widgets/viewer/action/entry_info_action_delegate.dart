@@ -44,6 +44,7 @@ class EntryInfoActionDelegate with FeedbackMixin, PermissionAwareMixin, EntryEdi
       case .editTitleDescription:
       case .editRating:
       case .editTags:
+      case .addTag:
       case .removeMetadata:
         return canWrite;
       case .exportMetadata:
@@ -81,6 +82,7 @@ class EntryInfoActionDelegate with FeedbackMixin, PermissionAwareMixin, EntryEdi
       case .editRating:
         return targetEntry.canEditRating;
       case .editTags:
+      case .addTag:
         return targetEntry.canEditTags;
       case .removeMetadata:
         return targetEntry.canEdit && targetEntry.isMetadataRemovalSupported;
