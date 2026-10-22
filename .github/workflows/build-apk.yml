@@ -1,0 +1,60 @@
+name: Build test APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "claude/**" ]
+
+# Declare default permissions as read only.
+permissions: read-all
+
+jobs:
+  build_apk:
+    name: Build libre profile APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+
+      # Building relies on the Android Gradle plugin,
+      # which requires a modern Java version (not the default one).
+      - name: Set up JDK for Android Gradle plugin
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Get Flutter packages
+        run: |
+          scripts/gen_flavor_libre.sh
+          scripts/apply_flavor_libre.sh
+
+      - name: Generate app localizations
+        run: ./flutterw gen-l10n
+
+      # build in profile mode, instead of release,
+      # so that it is signed with the debug key and no signing secrets are required.
+      # The profile build type has its own application ID suffix,
+      # so it can be installed alongside store versions.
+      - name: Build APKs
+        # specify NDK for `icu4x` hook linker
+        # cf https://github.com/deckerst/aves/issues/1521#issuecomment-5599985874
+        run: |
+          NDK_VERSION=28.2.13676358
+          export ANDROID_NDK=$ANDROID_SDK_ROOT/ndk/$NDK_VERSION
+          export ANDROID_NDK_HOME=$ANDROID_NDK
+          export ANDROID_NDK_ROOT=$ANDROID_NDK
+          export AVES_GOOGLE_API_KEY="NONE"
+          ./flutterw build apk --profile -t lib/main_libre.dart --flavor libre --split-per-abi
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: aves-libre-profile-apks
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 14
